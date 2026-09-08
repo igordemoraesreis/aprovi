@@ -1323,11 +1323,9 @@ document.addEventListener('DOMContentLoaded', function () {
     elementosReveal.forEach(function (el) { el.classList.add('visivel'); });
   }
 
-  /* ----------------------------------------------------------
+    /* ----------------------------------------------------------
      4. FORMULÁRIO DE LISTA DE ESPERA
-     Validação de e-mail + feedback visual.
-     O envio real para um serviço de e-mail deve ser plugado
-     no ponto marcado com TODO abaixo.
+     Validação de e-mail + envio real via Web3Forms
      ---------------------------------------------------------- */
   var form = document.getElementById('formEspera');
   var msg = document.getElementById('formEsperaMsg');
@@ -1347,24 +1345,58 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
 
-      // TODO: integrar com serviço de e-mail (Mailchimp, ConvertKit,
-      // ActiveCampaign, RD Station, Formspree, etc.). Exemplo com fetch:
-      //
-      // fetch('https://SEU-ENDPOINT-AQUI', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ email: email })
-      // })
-      //   .then(function () { mostrarSucesso(); })
-      //   .catch(function () { mostrarErro(); });
+      var botao = form.querySelector('button[type="submit"], button');
+      if (botao) {
+        botao.disabled = true;
+        botao.dataset.textoOriginal = botao.textContent;
+        botao.textContent = 'Enviando...';
+      }
 
-      mostrarSucesso();
+      msg.textContent = '';
+      msg.className = 'form-espera__msg';
+
+      var dados = new FormData();
+      dados.append('access_key', 'abbdf8cb-b401-4438-a75f-9cd6e374e534');
+      dados.append('email', email);
+      dados.append('from_name', 'Aprovi');
+      dados.append('subject', 'Nova inscrição na lista de espera — Aprovi');
+      dados.append('message', 'Olá! Um novo interessado se cadastrou na lista de espera do Aprovi. E-mail: ' + email);
+
+      fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        body: dados
+      })
+        .then(function (resposta) { return resposta.json(); })
+        .then(function (json) {
+          if (json.success) {
+            mostrarSucesso();
+          } else {
+            mostrarErro('Não foi possível enviar. Tente novamente em instantes.');
+          }
+        })
+        .catch(function () {
+          mostrarErro('Não foi possível enviar. Tente novamente em instantes.');
+        })
+        .finally(function () {
+          if (botao) {
+            botao.disabled = false;
+            botao.textContent = botao.dataset.textoOriginal;
+          }
+        });
 
       function mostrarSucesso() {
         msg.textContent = 'Recebemos seu e-mail! Você será avisado assim que as vagas abrirem.';
         msg.className = 'form-espera__msg sucesso';
         form.reset();
       }
+
+      function mostrarErro(texto) {
+        msg.textContent = texto;
+        msg.className = 'form-espera__msg erro';
+      }
+    });
+  }
+
     });
   }
 
